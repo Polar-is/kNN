@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import tud.ke.ml.project.classifier.NearestNeighbor;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.lazy.keNN;
 import weka.core.EuclideanDistance;
@@ -231,4 +232,17 @@ public class SimpleValidation {
 		}
 	}
 
+	/**
+	 * This test validates if a group number is returned. 
+	 * @throws Exception
+	 */
+	@Test
+	public void testGroupNumber() throws Exception {
+		NearestNeighbor classifier = new NearestNeighbor();
+
+		assertTrue(Integer.valueOf(classifier.getGroupNumber())>0);
+	
+	}
+	
+	
 }

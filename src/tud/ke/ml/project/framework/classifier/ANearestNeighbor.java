@@ -184,7 +184,14 @@ public abstract class ANearestNeighbor {
 	protected abstract double[][] normalizationScaling();
 		
 	/**
+	 * Caution: deprecated! Use getGroupNumber() instead
 	 * @return the list of matrikel numbers of students in the team
 	 */
-	protected abstract String[] getMatrikelNumbers();
+	@Deprecated protected abstract String[] getMatrikelNumbers();
+
+	/**
+	 * @return the group/team number
+	 */
+	public abstract String getGroupNumber();
+
 }
