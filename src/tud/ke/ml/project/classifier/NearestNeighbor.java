@@ -44,13 +44,16 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 
 	protected Map<Object,Double> getUnweightedVotes(List<Pair<List<Object>, Double>> subset) {
 		Map<Object, Double> unweightedVotes = new TreeMap<Object, Double>();
+		double voteValue;
+		
 		for(Pair<List<Object>, Double> pair : subset){
-			Object _class = pair.getA().get(pair.getA().size()-1);
+			Object _class = pair.getA().get(this.getClassAttribute());
 			//System.out.println(_class.toString());
-			//unweightedVotes.put(_class, 1.0);
+			voteValue = 0.0;
 			
 			if(unweightedVotes.containsKey(_class)){
-				unweightedVotes.replace(_class, unweightedVotes.get(_class) + 1.0);
+				voteValue = unweightedVotes.get(_class) + 1.0;
+				unweightedVotes.replace(_class, voteValue);
 			}else{
 				unweightedVotes.put(_class, 1.0);
 			}
@@ -61,11 +64,33 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 	}
 
 	protected Map<Object, Double> getWeightedVotes(List<Pair<List<Object>, Double>> subset) {
-		return null;
+		Map<Object, Double> weightedVotes = new TreeMap<Object, Double>();
+		double voteValue;
+		
+		for(Pair<List<Object>, Double> pair : subset){
+			Object _class = pair.getA().get(this.getClassAttribute());
+			System.out.println(_class.toString());
+			voteValue = 0.0;
+			
+			if(weightedVotes.containsKey(_class)){
+				voteValue = (double)weightedVotes.get(_class) + 1/(pair.getB()*pair.getB()); // changes here -> 1.0 replaced with ... 
+				System.out.println(weightedVotes.get(_class) + " " + 1/(pair.getB()*pair.getB()));
+				weightedVotes.replace(_class, voteValue);
+				//System.out.println(weightedVotes.get(_class) + " " + voteValue);
+			}else{
+				voteValue = 1/(pair.getB()*pair.getB()); //changes here -> 0.0 replaced with ...
+				weightedVotes.put(_class, voteValue);
+				//System.out.println("initial: " + voteValue);
+			}	
+			
+		}
+		
+		System.out.println(weightedVotes.toString());
+		
+		return weightedVotes;
 	}
 
 	protected Object getWinner(Map<Object, Double> votes) {
-		
 		Entry<Object, Double> maxEntry = null;
 
 		for(Entry<Object, Double> entry : votes.entrySet()) {
@@ -74,16 +99,21 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		    }
 		}
 		
-		
 		//System.out.println(maxEntry);
-		
 		
 		return maxEntry.getKey();
 	}
 
 	protected Object vote(List<Pair<List<Object>, Double>> subset) {
-		Map<Object,Double> unweightedVotes = getUnweightedVotes(subset);
-		Object winner = getWinner(unweightedVotes);
+		Map<Object,Double> votes = null;
+
+		if(this.isInverseWeighting()){
+			votes = getWeightedVotes(subset);
+		}else{
+			votes = getUnweightedVotes(subset);
+		}
+		
+		Object winner = getWinner(votes);
 		return winner;
 	}
 
@@ -91,6 +121,8 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 	protected List<Pair<List<Object>, Double>> getNearest(List<Object> data) {
 		List<Pair<List<Object>, Double>> nearest = new LinkedList<Pair<List<Object>, Double>>();
 		int k = getkNearest();
+		
+		//System.out.println(model.toString());
 		
 		for(List<Object> modelInstance : this.model){
 			nearest.add(new Pair<List<Object>, Double>(modelInstance, this.determineManhattanDistance(modelInstance, data)));
@@ -103,11 +135,13 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 			}
 		});
 		
-		//System.out.println(nearest.toString());
+		System.out.println(data.toString());
+		//System.out.println("k:"+k);
 		
+		k = Math.min(k, nearest.size());
 		nearest = nearest.subList(0, k);
 				
-		//System.out.println(nearest.toString());
+		System.out.println(nearest.toString());
 		
 		return nearest;
 	}
