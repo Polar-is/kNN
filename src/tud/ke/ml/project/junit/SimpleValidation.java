@@ -46,7 +46,7 @@ public class SimpleValidation {
 		wekaClassifier = new IBk();
 
 		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(90);
+		filterTrain.setPercentage(10);
 		filterTest = new RemovePercentage();
 		filterTest.setPercentage(10);	
 		filterTest.setInvertSelection(true);
@@ -100,11 +100,11 @@ public class SimpleValidation {
 	 */
 	@Test
 	public void testCorrectnessUnweightedManhattank1() throws Exception {
-		classifier.setkNearest(1);
+		classifier.setkNearest(3);
 		classifier.setMetric(new SelectedTag(0, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(0, keNN.TAGS_WEIGHTING));
 		
-		wekaClassifier.setKNN(1);
+		wekaClassifier.setKNN(3);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		ManhattanDistance df = new ManhattanDistance();
 		df.setDontNormalize(true);
@@ -134,11 +134,11 @@ public class SimpleValidation {
 	 */
 	@Test
 	public void testCorrectnessUnweightedEuclideank1() throws Exception {
-		classifier.setkNearest(1);
+		classifier.setkNearest(3);
 		classifier.setMetric(new SelectedTag(1, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(0, keNN.TAGS_WEIGHTING));
 		
-		wekaClassifier.setKNN(1);
+		wekaClassifier.setKNN(3);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		EuclideanDistance df = new EuclideanDistance();
 		df.setDontNormalize(true);

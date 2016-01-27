@@ -65,27 +65,25 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 
 	protected Map<Object, Double> getWeightedVotes(List<Pair<List<Object>, Double>> subset) {
 		Map<Object, Double> weightedVotes = new TreeMap<Object, Double>();
-		double voteValue;
+		double voteValue, distance;
 		
 		for(Pair<List<Object>, Double> pair : subset){
 			Object _class = pair.getA().get(this.getClassAttribute());
-			System.out.println(_class.toString());
+			//System.out.println(_class.toString());
 			voteValue = 0.0;
+			distance = ((pair.getB() == 0.0) ? Double.POSITIVE_INFINITY : pair.getB());
 			
 			if(weightedVotes.containsKey(_class)){
-				voteValue = (double)weightedVotes.get(_class) + 1/(pair.getB()*pair.getB()); // changes here -> 1.0 replaced with ... 
-				System.out.println(weightedVotes.get(_class) + " " + 1/(pair.getB()*pair.getB()));
+				voteValue = weightedVotes.get(_class) + 1/distance;  
 				weightedVotes.replace(_class, voteValue);
-				//System.out.println(weightedVotes.get(_class) + " " + voteValue);
 			}else{
-				voteValue = 1/(pair.getB()*pair.getB()); //changes here -> 0.0 replaced with ...
+				voteValue = 1/distance;
 				weightedVotes.put(_class, voteValue);
-				//System.out.println("initial: " + voteValue);
 			}	
 			
 		}
 		
-		System.out.println(weightedVotes.toString());
+		//System.out.println(weightedVotes.toString());
 		
 		return weightedVotes;
 	}
@@ -114,6 +112,7 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		}
 		
 		Object winner = getWinner(votes);
+		//System.out.println(winner.toString());
 		return winner;
 	}
 
@@ -121,11 +120,35 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 	protected List<Pair<List<Object>, Double>> getNearest(List<Object> data) {
 		List<Pair<List<Object>, Double>> nearest = new LinkedList<Pair<List<Object>, Double>>();
 		int k = getkNearest();
+		double distance;
+		double[][] normalizationScaling;
+		boolean useManhattanDist, isNormalizing = false;
 		
-		//System.out.println(model.toString());
+		if(this.getMetric() == 0){
+			useManhattanDist = true;
+		}else{
+			useManhattanDist = false;
+		}
 		
+		if(this.isNormalizing()){
+			normalizationScaling = this.normalizationScaling();
+			this.scaling = normalizationScaling[0];
+			this.translation = normalizationScaling[1];
+			isNormalizing = true;
+		}
+		
+		//System.out.println(this.model.size());
 		for(List<Object> modelInstance : this.model){
-			nearest.add(new Pair<List<Object>, Double>(modelInstance, this.determineManhattanDistance(modelInstance, data)));
+			if(isNormalizing){
+				
+			}
+			
+			if(useManhattanDist){
+				distance = this.determineManhattanDistance(modelInstance, data);
+			}else{
+				distance = this.determineEuclideanDistance(modelInstance, data);
+			}
+			nearest.add(new Pair<List<Object>, Double>(modelInstance, distance));
 		}
 		
 		Collections.sort(nearest, new Comparator<Pair<List<Object>, Double>>() {
@@ -135,13 +158,14 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 			}
 		});
 		
-		System.out.println(data.toString());
+		//System.out.println(data.toString());
+		//System.out.println(nearest.toString());
 		//System.out.println("k:"+k);
 		
 		k = Math.min(k, nearest.size());
 		nearest = nearest.subList(0, k);
 				
-		System.out.println(nearest.toString());
+		//System.out.println(nearest.toString());
 		
 		return nearest;
 	}
@@ -150,19 +174,41 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		//System.out.println("---");
 		double distance = 0.0;
 		for(int i = 0; i<instance1.size(); i++){
-			if(!instance1.get(i).toString().equals(instance2.get(i).toString())){
-				distance += 1.0;
+			if(i != this.getClassAttribute()  && !instance1.get(i).toString().equals(instance2.get(i).toString())){
+				//distance += 1.0;
+				//System.out.println(instance1.get(i).toString() + " - " + instance2.get(i).toString());
+				if(instance1.get(i).getClass().getName().equals("java.lang.String")){
+					distance += 1.0;
+				}else{
+					distance += Math.abs((double)instance1.get(i) - (double)instance2.get(i));
+				}
+			}
+				
+		}
+		//System.out.println("distance " + String.valueOf(distance) + "\n");
+		
+		return distance;
+	}
+
+	protected double determineEuclideanDistance(List<Object> instance1,List<Object> instance2) {
+		double distance = 0.0;
+		for(int i = 0; i<instance1.size(); i++){
+			if(i != this.getClassAttribute() && !instance1.get(i).toString().equals(instance2.get(i).toString())){
+				//System.out.println(instance1.get(i).getClass().getName());
+				if(instance1.get(i).getClass().getName().equals("java.lang.String")){
+					distance += 1.0;
+				}else{
+					distance += Math.pow(((double)instance1.get(i) - (double)instance2.get(i)), 2);
+				}
 			}
 			//System.out.println(instance1.get(i).toString());
 			//System.out.println(instance2.get(i).toString());
 		}
 		//System.out.println("distance " + String.valueOf(distance));
 		
+		distance = Math.sqrt(distance);
+		
 		return distance;
-	}
-
-	protected double determineEuclideanDistance(List<Object> instance1,List<Object> instance2) {
-		return 0;
 	}
 
 	protected double[][] normalizationScaling() {

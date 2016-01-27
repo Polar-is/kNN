@@ -32,6 +32,7 @@ public class SimpleRun {
 		//Laden der Daten
 		ArffLoader loader = new ArffLoader();
 		loader.setFile(new File("data/contact-lenses.arff"));
+		//loader.setFile(new File("data/credit-g.arff"));
 		data = loader.getDataSet();
 		//Sezten des Klassenattributes
 		data.setClassIndex(data.numAttributes()-1);
