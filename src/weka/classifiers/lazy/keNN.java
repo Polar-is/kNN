@@ -66,7 +66,7 @@ public class keNN extends AbstractClassifier implements OptionHandler {
 	public double classifyInstance(Instance instance) {
 		int classAttribute = instance.classAttribute().index();
 		Object classValue = classifier.classifyInstance(convert(instance), classAttribute);
-		System.out.println("--Klasse-- " + classValue.toString() + " " + instance.classAttribute());
+		//System.out.println("--Klasse-- " + classValue.toString() + " " + instance.classAttribute());
 		return instance.classAttribute().indexOfValue(classValue.toString());
 	}
 

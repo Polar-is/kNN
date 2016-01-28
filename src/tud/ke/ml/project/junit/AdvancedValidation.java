@@ -221,6 +221,7 @@ public class AdvancedValidation {
 				double wekaClass = wekaClassifier.classifyInstance(instance);
 				myClass = classifier.classifyInstance(instance);
 				wekaClass = wekaClassifier.classifyInstance(instance);
+				//System.out.print((wekaClass == myClass ? "" : instance.stringValue(instance.classIndex()) + " - weka: " + wekaClass + " - algo: " + myClass + "\n" ));
 				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
 			}
 		}
@@ -230,7 +231,6 @@ public class AdvancedValidation {
 	 * This test the correctness of the unweighted Manhattan distance implementation with nominal attributes
 	 * @throws Exception
 	 */
-	@Ignore
 	@Test
 	public void testCorrectnessNominalWeightedManhattank10Normalized() throws Exception {
 		RemovePercentage filterTrain=null,filterTest=null;
@@ -246,12 +246,12 @@ public class AdvancedValidation {
 		
 		init(data);
 				
-		classifier.setkNearest(11);
+		classifier.setkNearest(10);
 		classifier.setMetric(new SelectedTag(0, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(1, keNN.TAGS_WEIGHTING));
 		classifier.setNormalization(new SelectedTag(1, keNN.TAGS_NORM));
 		
-		wekaClassifier.setKNN(11);
+		wekaClassifier.setKNN(10);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		ManhattanDistance df = new ManhattanDistance();
 		df.setDontNormalize(false);
@@ -273,6 +273,7 @@ public class AdvancedValidation {
 				double wekaClass = wekaClassifier.classifyInstance(instance);
 				myClass = classifier.classifyInstance(instance);
 				wekaClass = wekaClassifier.classifyInstance(instance);
+				//System.out.print((wekaClass == myClass ? "" : instance.stringValue(instance.classIndex()) + " - weka: " + wekaClass + " - algo: " + myClass + "\n" ));
 				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
 			}
 		}
@@ -297,12 +298,12 @@ public class AdvancedValidation {
 		
 		init(data);
 		
-		classifier.setkNearest(11);
+		classifier.setkNearest(1);
 		classifier.setMetric(new SelectedTag(1, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(0, keNN.TAGS_WEIGHTING));
 		classifier.setNormalization(new SelectedTag(0, keNN.TAGS_NORM));
 		
-		wekaClassifier.setKNN(11);
+		wekaClassifier.setKNN(1);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		EuclideanDistance df = new EuclideanDistance();
 		df.setDontNormalize(true);
@@ -347,12 +348,12 @@ public class AdvancedValidation {
 		
 		init(data);
 		
-		classifier.setkNearest(3);
+		classifier.setkNearest(1);
 		classifier.setMetric(new SelectedTag(0, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(1, keNN.TAGS_WEIGHTING));
 		classifier.setNormalization(new SelectedTag(0, keNN.TAGS_NORM));
 		
-		wekaClassifier.setKNN(3);
+		wekaClassifier.setKNN(1);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		ManhattanDistance df = new ManhattanDistance();
 		df.setDontNormalize(true);
@@ -373,8 +374,8 @@ public class AdvancedValidation {
 			for(Instance instance : test) {
 				double myClass = classifier.classifyInstance(instance);
 				double wekaClass = wekaClassifier.classifyInstance(instance);
-				System.out.print((wekaClass == myClass ? "" : (instance.stringValue(instance.classIndex()).equals("good") ? 0.0 : 1.0) + " - weka: " + wekaClass + " - algo: " + myClass ));
-				//assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				//System.out.print((wekaClass == myClass ? "" : (instance.stringValue(instance.classIndex()).equals("good") ? 0.0 : 1.0) + " - weka: " + wekaClass + " - algo: " + myClass + "\n" ));
+				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
 			}
 		}
 	}
@@ -433,7 +434,6 @@ public class AdvancedValidation {
 	 * This tests validates the inverse weighted, euclidean distance metric.
 	 * @throws Exception
 	 */
-	@Ignore
 	@Test
 	public void testCorrectnessWeightedEuclideank1normalized() throws Exception {
 		RemovePercentage filterTrain=null,filterTest=null;
@@ -479,6 +479,7 @@ public class AdvancedValidation {
 			for(Instance instance : test) {
 				double myClass = classifier.classifyInstance(instance);
 				double wekaClass = wekaClassifier.classifyInstance(instance);
+				//System.out.print((wekaClass == myClass ? "" : instance.stringValue(instance.classIndex()) + " - weka: " + wekaClass + " - algo: " + myClass + "\n" ));
 				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
 			}
 		}
