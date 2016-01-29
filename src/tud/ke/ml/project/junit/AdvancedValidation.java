@@ -74,8 +74,6 @@ public class AdvancedValidation {
 		double myClass = myClassifier.classifyInstance(testInstance);
 		double[] wekaDistribution=wekaClassifier.distributionForInstance(testInstance);
 		double maxProb = wekaDistribution[Utils.maxIndex(wekaDistribution)];
-		if(!(wekaDistribution[(int)myClass]==maxProb))
-			System.out.println("Weka: " + Arrays.toString(wekaDistribution) + " - my: " + myClass + " maxProb:" + maxProb);
 		assertTrue("Predicted class "+(int)myClass+ " for ["+testInstance.toString()+"] not among top classes in predicted distribution by weka: "+Arrays.toString(wekaDistribution),wekaDistribution[(int)myClass]==maxProb);
 	}
 
