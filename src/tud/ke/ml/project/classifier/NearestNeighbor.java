@@ -138,8 +138,9 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 			normalizationScaling = this.normalizationScaling();
 			this.scaling = normalizationScaling[0];
 			this.translation = normalizationScaling[1];
-			
+			System.out.println(data);
 			data = this.normalize(data);
+			System.out.println(data + "\n");
 			isNormalizing = true;
 		}
 
@@ -170,7 +171,7 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		k = Math.min(k, nearest.size());
 		nearest = nearest.subList(0, k);
 
-		// System.out.println(nearest.toString());
+		//System.out.println(nearest.toString());
 
 		return nearest;
 	}
@@ -201,6 +202,7 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		for (int i = 0; i < instance1.size(); i++) {
 			if (i != this.getClassAttribute() && !instance1.get(i).toString().equals(instance2.get(i).toString())) {
 				// System.out.println(instance1.get(i).getClass().getName());
+				
 				if (instance1.get(i).getClass().getName().equals("java.lang.String")) {
 					distance += 1.0;
 				} else {
@@ -254,8 +256,9 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 			if(list.get(i).getClass().getName().equals("java.lang.String")){
 				normalizedList.add(list.get(i));
 			}else{
+				System.out.println("Transl: " + this.translation[i] + " Scaling: " + this.scaling[i]);
 				doubleValue = ((double)list.get(i) - this.translation[i])/(this.scaling[i] - this.translation[i]);
-				normalizedList.add(doubleValue);
+				normalizedList.add((Double.isNaN(doubleValue) ? 0.0 : doubleValue));
 			}
 		}
 				

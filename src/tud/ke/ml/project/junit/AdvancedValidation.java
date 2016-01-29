@@ -4,15 +4,16 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import tud.ke.ml.project.classifier.NearestNeighbor;
 import weka.classifiers.lazy.IBk;
 import weka.classifiers.lazy.keNN;
 import weka.core.EuclideanDistance;
@@ -20,6 +21,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.ManhattanDistance;
 import weka.core.SelectedTag;
+import weka.core.Utils;
 import weka.core.converters.ArffLoader;
 import weka.core.neighboursearch.LinearNNSearch;
 import weka.core.neighboursearch.NearestNeighbourSearch;
@@ -46,22 +48,48 @@ public class AdvancedValidation {
 			
 	}
 
+	RemovePercentage filterTrain;
+	RemovePercentage filterTest;
+	public static final int testSplitPercentage=33;  
+
+	private void setUpSplittingFilter(){
+		
+		filterTrain = new RemovePercentage();
+		filterTrain.setPercentage(testSplitPercentage);
+		filterTest = new RemovePercentage();
+		filterTest.setPercentage(testSplitPercentage);	
+		filterTest.setInvertSelection(true);
+
+	}
+
+	/**
+	 * Compares the predictions of the implemented classifier and the reference Weka classifier
+	 * 
+	 * @param myClassifier classifier to be implemented by students
+	 * @param wekaClassifier weka reference classifier
+	 * @param testInstance the instance to classify
+	 * @throws Exception
+	 */
+	public static void comparePredictions(keNN myClassifier, IBk wekaClassifier, Instance testInstance) throws Exception {
+		double myClass = myClassifier.classifyInstance(testInstance);
+		double[] wekaDistribution=wekaClassifier.distributionForInstance(testInstance);
+		double maxProb = wekaDistribution[Utils.maxIndex(wekaDistribution)];
+		if(!(wekaDistribution[(int)myClass]==maxProb))
+			System.out.println("Weka: " + Arrays.toString(wekaDistribution) + " - my: " + myClass + " maxProb:" + maxProb);
+		assertTrue("Predicted class "+(int)myClass+ " for ["+testInstance.toString()+"] not among top classes in predicted distribution by weka: "+Arrays.toString(wekaDistribution),wekaDistribution[(int)myClass]==maxProb);
+	}
+
+	
 	/**
 	 * This test validates if the model is getting learned without throwing exceptions.
 	 * @throws Exception
 	 */
 	@Test
 	public void testLearnModel() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
 		
 		init(data);
 		
@@ -76,17 +104,11 @@ public class AdvancedValidation {
 	 */
 	@Test
 	public void testClassify() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
-		
+		setUpSplittingFilter();
 		init(data);
 		
 		classifier.setkNearest(1);
@@ -121,27 +143,23 @@ public class AdvancedValidation {
 	 */
 	@Test
 	public void testCorrectnessUnweightedManhattank1() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
+		setUpSplittingFilter();
 		
 		NominalToBinary nomToBin = new NominalToBinary();
 		
+		setUpSplittingFilter();
 		init(data);
 		
-		classifier.setkNearest(3);
+		classifier.setkNearest(1);
 		classifier.setMetric(new SelectedTag(0, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(0, keNN.TAGS_WEIGHTING));
 		classifier.setNormalization(new SelectedTag(0, keNN.TAGS_NORM));
 		
-		wekaClassifier.setKNN(3);
+		wekaClassifier.setKNN(1);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		ManhattanDistance df = new ManhattanDistance();
 		df.setDontNormalize(true);
@@ -151,46 +169,34 @@ public class AdvancedValidation {
 		wekaClassifier.setDistanceWeighting(new SelectedTag(IBk.WEIGHT_NONE, IBk.TAGS_WEIGHTING));
 		
 		for(Instances instances : data) {
-			System.out.println("instances: " + instances.size());
 			nomToBin.setInputFormat(instances);
 			instances = Filter.useFilter(instances, nomToBin);
 			filterTrain.setInputFormat(instances);
 			filterTest.setInputFormat(instances);
-			
 			Instances train = Filter.useFilter(instances, filterTrain);
 			classifier.buildClassifier(train);
 			wekaClassifier.buildClassifier(train);
-			System.out.println("train: " + train.size());
-			
 			Instances test = Filter.useFilter(instances, filterTest);
-			System.out.println("test: " + test.size());
-			
 			for(Instance instance : test) {
-				//System.out.println("\nInstance: " + instance);
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				//System.out.println(myClass + " " + wekaClass);
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
 
+
+
+	
 	/**
 	 * This test the correctness of the unweighted Manhattan distance implementation with nominal attributes
 	 * @throws Exception
 	 */
 	@Test
 	public void testCorrectnessNominalUnweightedManhattank20() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
+		setUpSplittingFilter();
 		
 		init(data);
 				
@@ -217,12 +223,7 @@ public class AdvancedValidation {
 			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				myClass = classifier.classifyInstance(instance);
-				wekaClass = wekaClassifier.classifyInstance(instance);
-				//System.out.print((wekaClass == myClass ? "" : instance.stringValue(instance.classIndex()) + " - weka: " + wekaClass + " - algo: " + myClass + "\n" ));
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
@@ -233,25 +234,20 @@ public class AdvancedValidation {
 	 */
 	@Test
 	public void testCorrectnessNominalWeightedManhattank10Normalized() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
 		
+		setUpSplittingFilter();
 		init(data);
 				
-		classifier.setkNearest(10);
+		classifier.setkNearest(11);
 		classifier.setMetric(new SelectedTag(0, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(1, keNN.TAGS_WEIGHTING));
 		classifier.setNormalization(new SelectedTag(1, keNN.TAGS_NORM));
 		
-		wekaClassifier.setKNN(10);
+		wekaClassifier.setKNN(11);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		ManhattanDistance df = new ManhattanDistance();
 		df.setDontNormalize(false);
@@ -266,15 +262,10 @@ public class AdvancedValidation {
 			filterTest.setInputFormat(instances);
 			Instances train = Filter.useFilter(instances, filterTrain);
 			classifier.buildClassifier(train);
+			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				wekaClassifier.buildClassifier(train);
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				myClass = classifier.classifyInstance(instance);
-				wekaClass = wekaClassifier.classifyInstance(instance);
-				//System.out.print((wekaClass == myClass ? "" : instance.stringValue(instance.classIndex()) + " - weka: " + wekaClass + " - algo: " + myClass + "\n" ));
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}	
@@ -285,25 +276,20 @@ public class AdvancedValidation {
 	 */
 	@Test
 	public void testCorrectnessUnweightedEuclideank1() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
 		
+		setUpSplittingFilter();
 		init(data);
 		
-		classifier.setkNearest(1);
+		classifier.setkNearest(11);
 		classifier.setMetric(new SelectedTag(1, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(0, keNN.TAGS_WEIGHTING));
 		classifier.setNormalization(new SelectedTag(0, keNN.TAGS_NORM));
 		
-		wekaClassifier.setKNN(1);
+		wekaClassifier.setKNN(11);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		EuclideanDistance df = new EuclideanDistance();
 		df.setDontNormalize(true);
@@ -317,12 +303,10 @@ public class AdvancedValidation {
 			filterTest.setInputFormat(instances);
 			Instances train = Filter.useFilter(instances, filterTrain);
 			classifier.buildClassifier(train);
+			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				wekaClassifier.buildClassifier(train);
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
@@ -333,19 +317,14 @@ public class AdvancedValidation {
 	 */
 	@Test
 	public void testCorrectnessWeightedManhattank1() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
 		
 		NominalToBinary nomToBin = new NominalToBinary();
 		
+		setUpSplittingFilter();
 		init(data);
 		
 		classifier.setkNearest(1);
@@ -372,10 +351,7 @@ public class AdvancedValidation {
 			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				//System.out.print((wekaClass == myClass ? "" : (instance.stringValue(instance.classIndex()).equals("good") ? 0.0 : 1.0) + " - weka: " + wekaClass + " - algo: " + myClass + "\n" ));
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
@@ -386,17 +362,12 @@ public class AdvancedValidation {
 	 */
 	@Test
 	public void testCorrectnessWeightedEuclideank1() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
 
+		setUpSplittingFilter();
 		init(data);
 		
 		NearestNeighbourSearch search = new LinearNNSearch();
@@ -423,9 +394,7 @@ public class AdvancedValidation {
 			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
@@ -436,16 +405,11 @@ public class AdvancedValidation {
 	 */
 	@Test
 	public void testCorrectnessWeightedEuclideank1normalized() throws Exception {
-		RemovePercentage filterTrain=null,filterTest=null;
 		keNN classifier = new keNN();
 		IBk wekaClassifier = new IBk();
 		List<Instances> data = new LinkedList<Instances>();
 		
-		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
-		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
-		filterTest.setInvertSelection(true);
+		setUpSplittingFilter();
 		
 		NominalToBinary nomToBin = new NominalToBinary();
 		
@@ -477,12 +441,12 @@ public class AdvancedValidation {
 			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				//System.out.print((wekaClass == myClass ? "" : instance.stringValue(instance.classIndex()) + " - weka: " + wekaClass + " - algo: " + myClass + "\n" ));
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
+	
+
+
 	
 }

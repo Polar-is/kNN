@@ -46,9 +46,9 @@ public class SimpleValidation {
 		wekaClassifier = new IBk();
 
 		filterTrain = new RemovePercentage();
-		filterTrain.setPercentage(10);
+		filterTrain.setPercentage(AdvancedValidation.testSplitPercentage);
 		filterTest = new RemovePercentage();
-		filterTest.setPercentage(10);	
+		filterTest.setPercentage(AdvancedValidation.testSplitPercentage);	
 		filterTest.setInvertSelection(true);
 	}
 
@@ -100,11 +100,11 @@ public class SimpleValidation {
 	 */
 	@Test
 	public void testCorrectnessUnweightedManhattank1() throws Exception {
-		classifier.setkNearest(3);
+		classifier.setkNearest(1);
 		classifier.setMetric(new SelectedTag(0, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(0, keNN.TAGS_WEIGHTING));
 		
-		wekaClassifier.setKNN(3);
+		wekaClassifier.setKNN(1);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		ManhattanDistance df = new ManhattanDistance();
 		df.setDontNormalize(true);
@@ -121,9 +121,7 @@ public class SimpleValidation {
 			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				AdvancedValidation.comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
@@ -134,11 +132,11 @@ public class SimpleValidation {
 	 */
 	@Test
 	public void testCorrectnessUnweightedEuclideank1() throws Exception {
-		classifier.setkNearest(3);
+		classifier.setkNearest(1);
 		classifier.setMetric(new SelectedTag(1, keNN.TAGS_DISTANCE));
 		classifier.setDistanceWeighting(new SelectedTag(0, keNN.TAGS_WEIGHTING));
 		
-		wekaClassifier.setKNN(3);
+		wekaClassifier.setKNN(1);
 		NearestNeighbourSearch search = new LinearNNSearch();
 		EuclideanDistance df = new EuclideanDistance();
 		df.setDontNormalize(true);
@@ -155,9 +153,7 @@ public class SimpleValidation {
 			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				AdvancedValidation.comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
@@ -189,9 +185,7 @@ public class SimpleValidation {
 			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				AdvancedValidation.comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
@@ -225,9 +219,7 @@ public class SimpleValidation {
 			wekaClassifier.buildClassifier(train);
 			Instances test = Filter.useFilter(instances, filterTest);
 			for(Instance instance : test) {
-				double myClass = classifier.classifyInstance(instance);
-				double wekaClass = wekaClassifier.classifyInstance(instance);
-				assertEquals("Instance: ["+instance.toString()+"] classified differently: ",wekaClass,myClass,0);
+				AdvancedValidation.comparePredictions(classifier, wekaClassifier, instance);
 			}
 		}
 	}
