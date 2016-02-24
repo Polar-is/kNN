@@ -2,14 +2,12 @@ package tud.ke.ml.project.classifier;
 
 import java.io.Serializable;
 import java.util.LinkedList;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.TreeMap;
 
 import tud.ke.ml.project.framework.classifier.ANearestNeighbor;
@@ -19,9 +17,10 @@ import tud.ke.ml.project.util.Pair;
  * This implementation assumes the class attribute is always available (but
  * probably not set)
  * 
- * @author cwirth
+ * @author dschneider
  *
  */
+@SuppressWarnings("serial")
 public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 
 	// private static final long serialVersionUID = 2010906213520172559L;
@@ -76,8 +75,11 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		for (Pair<List<Object>, Double> pair : subset) {
 			_class = pair.getA().get(this.getClassAttribute());
 			voteValue = 0.0;
+			//Avoid case 1 / 0
 			distance = ((pair.getB() == 0.0) ? Double.POSITIVE_INFINITY : pair.getB());
-
+			
+			//if the class is already present in the voting, increase the voting count by the weight of the current instance
+			//otherwise add it and initialize the voting count for this class with the current weight
 			if (weightedVotes.containsKey(_class)) {
 				voteValue = weightedVotes.get(_class) + 1 / distance;
 				weightedVotes.replace(_class, voteValue);
@@ -94,6 +96,8 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		Entry<Object, Double> maxEntry = null;
 
 		for (Entry<Object, Double> entry : votes.entrySet()) {
+			//replace the current max value with the value of the current entry, if it is bigger
+			//in case of ties, this solution selects the first entry with the maximal value as winner
 			if (maxEntry == null || entry.getValue() > maxEntry.getValue()) {
 				maxEntry = entry;
 			}
@@ -122,7 +126,8 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		boolean useManhattanDist, isNormalizing = false;
 		
 		useManhattanDist = (this.getMetric() == 0) ? true : false;
-
+		
+		//normalize values, if necessary
 		if (this.isNormalizing()) {
 			normalizationScaling = this.normalizationScaling();
 			this.scaling = normalizationScaling[0];
@@ -131,7 +136,8 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 			data = this.normalize(data);
 			isNormalizing = true;
 		}
-
+		
+		//loop through model to maintain a list of neighbors
 		for (List<Object> modelInstance : this.model) {
 			if (isNormalizing) {
 				modelInstance = this.normalize(modelInstance);
@@ -145,14 +151,17 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 			
 			nearest.add(new Pair<List<Object>, Double>(modelInstance, distance));
 		}
-
+		
+		//sort the list of nearest neighbors by ascending distance 
 		Collections.sort(nearest, new Comparator<Pair<List<Object>, Double>>() {
 			public int compare(Pair<List<Object>, Double> p1, Pair<List<Object>, Double> p2) {
 				return (p1.getB()).compareTo(p2.getB());
 			}
 		});
-
+		
+		//get minimum of k and list size, in case k is bigger than the size of the model
 		k = Math.min(k, nearest.size());
+		//get a sublist of the first k nearest neighbors, as nearest list is ordered by ascending distance
 		nearest = nearest.subList(0, k);
 
 		return nearest;
@@ -163,6 +172,7 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		
 		for (int i = 0; i < instance1.size(); i++) {
 			if (i != this.getClassAttribute() && !instance1.get(i).toString().equals(instance2.get(i).toString())) {
+				//distance 1 in case of nominal attributes, Manhattan distance in case of numeric attributes
 				if (instance1.get(i).getClass().getName().equals("java.lang.String")) {
 					distance += 1.0;
 				} else {
@@ -176,8 +186,10 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 
 	protected double determineEuclideanDistance(List<Object> instance1, List<Object> instance2) {
 		double distance = 0.0;
+		
 		for (int i = 0; i < instance1.size(); i++) {
-			if (i != this.getClassAttribute() && !instance1.get(i).toString().equals(instance2.get(i).toString())) {				
+			if (i != this.getClassAttribute() && !instance1.get(i).toString().equals(instance2.get(i).toString())) {
+				//distance 1 in case of nominal attributes, Euclidean distance in case of numeric attributes
 				if (instance1.get(i).getClass().getName().equals("java.lang.String")) {
 					distance += 1.0;
 				} else {
@@ -196,21 +208,25 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		double[] translation = new double[this.model.get(0).size()];
 		double[][] normalizationScaling = new double[2][this.model.get(0).size()];
 		
+		//initialize arrays with negative/positive infinity, so any value can be bigger/smaller
 		Arrays.fill(scaling, Double.NEGATIVE_INFINITY);
 		Arrays.fill(translation, Double.POSITIVE_INFINITY);
 		
 		for (List<Object> instance : this.model) {
 			for(int i = 0; i < instance.size(); i++) {
+				//nothing to normalize in case of nominal attribute
 				if(instance.get(i).getClass().getName().equals("java.lang.String")){
 					scaling[i] = 0.0;
 					translation[i] = 0.0;
 					continue;
 				}
 				
+				//find maximal value
 				if((double)instance.get(i) > scaling[i]){
 					scaling[i] = (double)instance.get(i);
 				}
 				
+				//find minimal value
 				if((double)instance.get(i) < translation[i]){
 					translation[i] = (double)instance.get(i);
 				}
@@ -234,6 +250,7 @@ public class NearestNeighbor extends ANearestNeighbor implements Serializable {
 		double doubleValue;
 		
 		for(int i = 0; i < list.size(); i++){
+			//nothing to normalize with nominal attributes, normalize when numeric attributes
 			if(list.get(i).getClass().getName().equals("java.lang.String")){
 				normalizedList.add(list.get(i));
 			}else{
